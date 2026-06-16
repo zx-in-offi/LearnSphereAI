@@ -1,0 +1,276 @@
+"use client";
+
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { Mail, Lock, User, Eye, EyeOff, Sparkles, ArrowRight, Check } from "lucide-react";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const passwordStrength = (() => {
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    return score;
+  })();
+
+  const strengthLabel = ["", "Weak", "Fair", "Good", "Strong", "Excellent"][passwordStrength];
+  const strengthColor = ["", "#ef4444", "#f59e0b", "#eab308", "#22c55e", "#10b981"][passwordStrength];
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Registration failed");
+        return;
+      }
+
+      // Auto sign in after registration
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        router.push("/login");
+      } else {
+        router.push("/dashboard");
+        router.refresh();
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = () => {
+    signIn("google", { callbackUrl: "/dashboard" });
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 grid-pattern" />
+      <div
+        className="glow-orb"
+        style={{
+          width: "600px",
+          height: "600px",
+          background: "radial-gradient(circle, rgba(139,92,246,0.15), transparent 70%)",
+          top: "-200px",
+          left: "-200px",
+        }}
+      />
+      <div
+        className="glow-orb"
+        style={{
+          width: "400px",
+          height: "400px",
+          background: "radial-gradient(circle, rgba(6,182,212,0.1), transparent 70%)",
+          bottom: "-100px",
+          right: "-100px",
+        }}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md mx-4 relative z-10"
+      >
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center gap-2 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold gradient-text">LearnSphere AI</span>
+          </Link>
+          <h1 className="text-2xl font-bold text-foreground">Create your account</h1>
+          <p className="text-muted-foreground mt-1">Start your AI-powered learning journey</p>
+        </div>
+
+        {/* Card */}
+        <div className="glass rounded-2xl p-8">
+          {/* Google Sign Up */}
+          <button
+            onClick={handleGoogleSignUp}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-[var(--border-color)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] transition-all duration-300 hover:border-[var(--primary)] mb-6"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+            </svg>
+            <span className="font-medium">Continue with Google</span>
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 h-px bg-[var(--border-color)]" />
+            <span className="text-sm text-[var(--muted-fg)]">or</span>
+            <div className="flex-1 h-px bg-[var(--border-color)]" />
+          </div>
+
+          {/* Registration Form */}
+          <form onSubmit={handleRegister} className="space-y-4">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            <div className="space-y-1.5">
+              <label htmlFor="name" className="text-sm font-medium text-[var(--muted-fg)]">
+                Full Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-fg)]" />
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="input-field pl-10"
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="text-sm font-medium text-[var(--muted-fg)]">
+                Email
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-fg)]" />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field pl-10"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="text-sm font-medium text-[var(--muted-fg)]">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted-fg)]" />
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field pl-10 pr-10"
+                  placeholder="Min. 6 characters"
+                  minLength={6}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-fg)] hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Password Strength */}
+              {password.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="space-y-1.5 pt-1"
+                >
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((level) => (
+                      <div
+                        key={level}
+                        className="h-1 flex-1 rounded-full transition-all duration-300"
+                        style={{
+                          backgroundColor: level <= passwordStrength ? strengthColor : "var(--muted)",
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs" style={{ color: strengthColor }}>
+                    {strengthLabel}
+                  </p>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Requirements */}
+            <div className="space-y-1 text-xs text-[var(--muted-fg)]">
+              <div className="flex items-center gap-2">
+                <Check className={`w-3 h-3 ${password.length >= 6 ? "text-green-500" : ""}`} />
+                <span>At least 6 characters</span>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || password.length < 6}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  Create Account
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-[var(--muted-fg)] mt-6">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-medium transition-colors"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
